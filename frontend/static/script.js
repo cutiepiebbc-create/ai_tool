@@ -1,74 +1,63 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const searchInput = document.getElementById("searchInput");
-    const searchBtn = document.getElementById("searchBtn");
-    const resultsDiv = document.getElementById("results");
+  const searchInput = document.getElementById("searchInput");
+  const searchBtn = document.getElementById("searchBtn");
+  const resultsDiv = document.getElementById("results");
+  const statusDiv = document.getElementById("status");
 
-    searchBtn.addEventListener("click", () => {
-        const query = searchInput.value.trim();
-        if (!query) {
-            alert("Please enter a product query.");
-            return;
-        }
+  async function search() {
+    const query = searchInput.value.trim();
+    resultsDiv.innerHTML = "";
+    statusDiv.textContent = "";
 
-        resultsDiv.innerHTML = "<p>Searching...</p>";
+    if (!query) {
+      statusDiv.textContent = "Please enter a search query.";
+      return;
+    }
 
-        fetch("/api/search", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ query })
-        })
-        .then(response => response.json())
-        .then(data => {
-            resultsDiv.innerHTML = "";
+    statusDiv.textContent = "Searching…";
 
-            if (data.error) {
-                resultsDiv.innerHTML = `<p style="color:red;">Error: ${data.error}</p>`;
-                return;
-            }
+    try {
+      const res = await fetch("/api/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query })
+      });
 
-            if (!data.results || data.results.length === 0) {
-                resultsDiv.innerHTML = "<p>No results found.</p>";
-                return;
-            }
+      const data = await res.json();
+      statusDiv.textContent = "";
 
-            data.results.forEach(product => {
-                const productDiv = document.createElement("div");
-                productDiv.className = "product";
+      if (!data.results || data.results.length === 0) {
+        statusDiv.textContent = "No results found.";
+        return;
+      }
 
-                const img = document.createElement("img");
-                img.src = product.image || "https://via.placeholder.com/100";
-                productDiv.appendChild(img);
+      data.results.forEach(product => {
+        const card = document.createElement("div");
+        card.className = "product-card";
 
-                const infoDiv = document.createElement("div");
-                infoDiv.className = "product-info";
+        card.innerHTML = `
+          <img src="${product.image || "https://via.placeholder.com/200"}" />
+          <a class="product-title" href="${product.link}" target="_blank">
+            ${product.title}
+          </a>
+          <div class="product-price">${product.price || "N/A"}</div>
+          <a class="view-btn" href="${product.link}" target="_blank">
+            View on eBay
+          </a>
+        `;
 
-                const title = document.createElement("h3");
-                title.textContent = product.title;
-                infoDiv.appendChild(title);
+        resultsDiv.appendChild(card);
+      });
 
-                const price = document.createElement("p");
-                price.textContent = `Price: ${product.price || "N/A"}`;
-                infoDiv.appendChild(price);
+    } catch (err) {
+      statusDiv.textContent = "Search failed. Try again.";
+      console.error(err);
+    }
+  }
 
-                const link = document.createElement("a");
-                link.href = product.link || "#";
-                link.textContent = "View Product";
-                link.target = "_blank";
-                infoDiv.appendChild(link);
+  searchBtn.addEventListener("click", search);
 
-                productDiv.appendChild(infoDiv);
-                resultsDiv.appendChild(productDiv);
-            });
-        })
-        .catch(err => {
-            resultsDiv.innerHTML = `<p style="color:red;">Request failed: ${err}</p>`;
-        });
-    });
-
-    // Optional: allow pressing Enter to search
-    searchInput.addEventListener("keyup", (e) => {
-        if (e.key === "Enter") searchBtn.click();
-    });
+  searchInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") search();
+  });
 });
