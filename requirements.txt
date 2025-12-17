@@ -1,10 +1,6 @@
 flask
+flask-cors
 requests
 python-dotenv
-sentence-transformers
-faiss-cpu
-transformers==4.35.0
-torch
-pandas
-flask-cors
 openai
+gunicorn
